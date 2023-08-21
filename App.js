@@ -1,20 +1,67 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from "react";
+import { View, Button, Text } from "react-native";
+import auth from "@react-native-firebase/auth";
+import {
+  GoogleSignin,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
 
-export default function App() {
+const App = () => {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    // Initialize Google Sign-In once when the component mounts
+    GoogleSignin.configure({
+      webClientId:
+        "905593881504-ne2dm8h5nf9r62numv3qs9vsjn2purlg.apps.googleusercontent.com", // Replace with your actual Web Client ID
+    });
+  }, []);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+
+      // Authenticate with Firebase
+      const googleCredential = auth.GoogleAuthProvider.credential(
+        userInfo.idToken
+      );
+      await auth().signInWithCredential(googleCredential);
+
+      setUser(userInfo);
+    } catch (error) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // User canceled the sign-in process
+        console.log("Sign-in process canceled");
+      } else {
+        console.error("Google Sign-In Error:", error);
+      }
+    }
+  };
+
+  const handleGoogleSignOut = async () => {
+    try {
+      await GoogleSignin.signOut();
+      await auth().signOut(); // Sign out from Firebase
+      setUser(null);
+      console.log("Signed out successfully");
+    } catch (error) {
+      console.error("Google Sign-Out Error:", error);
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      {user ? (
+        <>
+          <Text>Welcome, {user.user.name}!</Text>
+          <Button title="Sign Out" onPress={handleGoogleSignOut} />
+        </>
+      ) : (
+        <Button title="Sign in with Google" onPress={handleGoogleSignIn} />
+      )}
     </View>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default App;
