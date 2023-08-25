@@ -15,7 +15,21 @@ const App = () => {
       webClientId:
         "905593881504-ne2dm8h5nf9r62numv3qs9vsjn2purlg.apps.googleusercontent.com", // Replace with your actual Web Client ID
     });
+
+    // Load user data from AsyncStorage during component initialization
+    loadUserData();
   }, []);
+
+  const loadUserData = async () => {
+    try {
+      const userData = await AsyncStorage.getItem("user");
+      if (userData) {
+        setUser(JSON.parse(userData));
+      }
+    } catch (error) {
+      console.error("Error loading user data:", error);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     try {
@@ -27,6 +41,8 @@ const App = () => {
         userInfo.idToken
       );
       await auth().signInWithCredential(googleCredential);
+      // Save user data to AsyncStorage
+      await AsyncStorage.setItem("user", JSON.stringify(userInfo));
 
       setUser(userInfo);
     } catch (error) {
@@ -43,6 +59,8 @@ const App = () => {
     try {
       await GoogleSignin.signOut();
       await auth().signOut(); // Sign out from Firebase
+      // Remove user data from AsyncStorage
+      await AsyncStorage.removeItem("user");
       setUser(null);
       console.log("Signed out successfully");
     } catch (error) {
